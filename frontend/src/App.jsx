@@ -4,8 +4,19 @@ import { auth,googleProvider } from '../utils/firebase'
 
 export default function App() {
 
+  const handlelogin=async(token)=>{
+    try{
+      const {data}=await api.post("/auth/login",{token})
+      console.log(data)
+    }catch(error){
+      console.log(error)
+    }
+  }
   const googlelogin=async ()=>{
     const data=await signInWithPopup(auth,googleProvider)
+    const token=await data.user.getIdToken()
+    console.log(token)
+    await handlelogin(token)
     console.log(data)
   }
   return (
