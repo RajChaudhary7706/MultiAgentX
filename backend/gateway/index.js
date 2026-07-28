@@ -13,7 +13,7 @@ app.use(cors({
     credentials:true
 }))
 
-app.use(cookieParser)
+app.use(cookieParser())
 //middleware
 app.use('/auth',proxy(process.env.AUTH_SERVICE_URL));
 

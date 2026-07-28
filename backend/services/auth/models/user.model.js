@@ -5,12 +5,12 @@ const userSchema=new mongoose.Schema({
         type:String,
         unique:true
     },
-    name:string,
-    email:string,
-    avatar:string
+    name:String,
+    email:String,
+    avatar:String
 },{
     timestamps:true
 })
 
-const User=mongoose("User",userSchema)
+const User=mongoose.model("User",userSchema)
 export default User
