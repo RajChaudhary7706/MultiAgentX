@@ -2,6 +2,7 @@ import { signInWithPopup } from '@firebase/auth'
 import React from 'react'
 import { auth, googleProvider } from '../../utils/firebase'
 import api from '../../utils/axios'
+import { FcGoogle } from "react-icons/fc";
 
 function Home() {
 
@@ -23,7 +24,36 @@ function Home() {
 
   return (
     <div className='h-screen flex bg-[#0d0f14] text-white overflow-hidden'>
-
+      
+      <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur'>
+        <div className='w-[340px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-7 flex flex-col gap-5'>
+          <div className='flex flex-col gap-1'>
+            <h2 className='text-[17px] font-semibold text-slate-100 tracking-tight'>
+              Welcome to login MultiAgentX
+            </h2>
+            <p className='text-[13px] text-slate-500'>Please login to continue using the App.</p>
+          </div>
+          <button className="w-full
+              flex
+              items-center
+              justify-center
+              gap-3
+              rounded-xl
+              py-3
+              px-6
+              text-sm
+              font-semibold
+              text-black/90
+              bg-white
+              transition-all
+              duration-150
+              hover:bg-grey-200
+              cursor-pointer" onClick={googlelogin}>
+              <FcGoogle size={15}/>
+              Continue With Google
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
