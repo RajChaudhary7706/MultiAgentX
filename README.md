@@ -128,14 +128,14 @@ Below is the directory tree of the MultiAgentX project:
 
 ```text
 MultiAgentX
-├── backend
+├── backend                     # [Backend Docs](./backend/README.md)
 │   ├── docker-compose.yml      # Orchestrates local Redis service container
-│   ├── gateway
+│   ├── gateway                 # [Gateway Docs](./backend/gateway/README.md)
 │   │   ├── index.js            # Entry point for the Express API Gateway
 │   │   ├── package.json        # Gateway routing dependencies
 │   │   └── .env                # Gateway environmental configs
-│   ├── services
-│   │   └── auth
+│   ├── services                # [Services Docs](./backend/services/README.md)
+│   │   └── auth                # [Auth Service Docs](./backend/services/auth/README.md)
 │   │       ├── config
 │   │       │   ├── db.js       # Mongoose MongoDB connection script
 │   │       │   └── firebase.js # Firebase Admin initialization cert wrapper
@@ -148,10 +148,10 @@ MultiAgentX
 │   │       ├── index.js        # Main microservice port listener
 │   │       ├── package.json    # Auth microservice dependency manifest
 │   │       └── .env            # Auth Service database keys
-│   └── shared
+│   └── shared                  # [Shared Docs](./backend/shared/README.md)
 │       └── redis
 │           └── redis.js        # Shared ioredis connector instance
-├── frontend
+├── frontend                    # [Frontend Docs](./frontend/README.md)
 │   ├── public                  # Static folder assets
 │   ├── src
 │   │   ├── assets              # Images, vector graphics, and logos

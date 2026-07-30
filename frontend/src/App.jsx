@@ -1,14 +1,18 @@
-import { signInWithPopup } from '@firebase/auth'
-import React from 'react'
-import { auth, googleProvider } from '../utils/firebase'
-import api from '../utils/axios'
+import React, { useEffect } from 'react'
 import Home from './pages/Home'
+import getCurrentUsers from './features/getCurrentUser'
 
 export default function App() {
+  useEffect(() => {
+    const getUser = async () => {
+      await getCurrentUsers()
+    }
+    getUser()
+  }, [])
 
   return (
     <>
-      <Home />
+      <Home/>
     </>
   )
 }
