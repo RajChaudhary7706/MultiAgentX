@@ -1,4 +1,4 @@
-import { signInWithPopup } from '@firebase/auth'
+import { signInWithPopup } from 'firebase/auth'
 import React from 'react'
 import { auth, googleProvider } from '../../utils/firebase'
 import api from '../../utils/axios'
@@ -24,7 +24,7 @@ function Home() {
 
   return (
     <div className='h-screen flex bg-[#0d0f14] text-white overflow-hidden'>
-      
+
       <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur'>
         <div className='w-[340px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-7 flex flex-col gap-5'>
           <div className='flex flex-col gap-1'>
@@ -47,10 +47,10 @@ function Home() {
               bg-white
               transition-all
               duration-150
-              hover:bg-grey-200
+              hover:bg-gray-200
               cursor-pointer" onClick={googlelogin}>
-              <FcGoogle size={15}/>
-              Continue With Google
+            <FcGoogle size={15} />
+            Continue With Google
           </button>
         </div>
       </div>
