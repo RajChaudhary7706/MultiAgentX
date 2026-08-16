@@ -1,5 +1,5 @@
 import { json } from "express"
-// import redis from "../../shared/redis/redis.js"
+import redis from "../../shared/redis/redis.js"
 const protect = async (req, res, next) => {
     try {
         const sessionId = req.cookies?.session
