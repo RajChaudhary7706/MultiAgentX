@@ -108,17 +108,20 @@ The platform separates the presentation, routing, and business logic into three 
 
 ```mermaid
 graph TD
-    Client[React Frontend Client] -->|HTTP Requests /auth/*| Gateway[API Gateway :8000]
+    Client[React Frontend Client] -->|HTTP Requests /api/*| Gateway[API Gateway :8000]
     Gateway -->|Forwarded Auth Traffic| AuthService[Auth Service :8001]
+    Gateway -->|Forwarded Chat Traffic| ChatService[Chat Service :8002]
     AuthService -->|1. Verifies token signature| Firebase[Firebase Admin Auth]
     AuthService -->|2. Queries / Writes profiles| MongoDB[(MongoDB Atlas)]
     AuthService -->|3. Saves Session State| Redis[(Redis Cache :6379)]
+    ChatService -->|Reads / Writes Messages| MongoDB
 ```
 
 ### Component Breakdown
 1. **Frontend Client**: Manages login buttons, coordinates authentication state, and renders responsive Tailwind-styled views.
-2. **API Gateway (`:8000`)**: The single entrypoint for frontend requests. Resolves CORS permissions, processes incoming cookies, and handles reverse proxying.
+2. **API Gateway (`:8000`)**: The single entrypoint for frontend requests. Resolves CORS permissions, processes incoming cookies, handles custom header injection via `proxyWithHeader`, and handles reverse proxying.
 3. **Auth Service (`:8001`)**: Validates Firebase credentials, persists user profiles inside MongoDB, handles session generation/revocation, and communicates with Redis.
+4. **Chat Service (`:8002`)**: Handles conversation state, message history, and LLM orchestration interactions.
 
 ---
 
@@ -131,23 +134,38 @@ MultiAgentX
 ├── backend                     # [Backend Docs](./backend/README.md)
 │   ├── docker-compose.yml      # Orchestrates local Redis service container
 │   ├── gateway                 # [Gateway Docs](./backend/gateway/README.md)
+│   │   ├── utils
+│   │   │   └── proxyWithHeader.js # Middleware for authenticated proxy forwarding
 │   │   ├── index.js            # Entry point for the Express API Gateway
 │   │   ├── package.json        # Gateway routing dependencies
 │   │   └── .env                # Gateway environmental configs
 │   ├── services                # [Services Docs](./backend/services/README.md)
-│   │   └── auth                # [Auth Service Docs](./backend/services/auth/README.md)
+│   │   ├── auth                # [Auth Service Docs](./backend/services/auth/README.md)
+│   │   │   ├── config
+│   │   │   │   ├── db.js       # Mongoose MongoDB connection script
+│   │   │   │   └── firebase.js # Firebase Admin initialization cert wrapper
+│   │   │   ├── controllers
+│   │   │   │   └── auth.controller.js # Login, registration, and logout handlers
+│   │   │   ├── models
+│   │   │   │   └── user.model.js      # Mongoose schema mapping user attributes
+│   │   │   ├── routes
+│   │   │   │   └── auth.router.js     # Endpoint routes for authentication
+│   │   │   ├── index.js        # Main microservice port listener
+│   │   │   ├── package.json    # Auth microservice dependency manifest
+│   │   │   └── .env            # Auth Service database keys
+│   │   └── chat                # [Chat Service Docs](./backend/services/chat/README.md)
 │   │       ├── config
-│   │       │   ├── db.js       # Mongoose MongoDB connection script
-│   │       │   └── firebase.js # Firebase Admin initialization cert wrapper
+│   │       │   └── db.js       # Mongoose MongoDB connection script
 │   │       ├── controllers
-│   │       │   └── auth.controller.js # Login, registration, and logout handlers
+│   │       │   └── chat.controller.js # Chat logic handlers
 │   │       ├── models
-│   │       │   └── user.model.js      # Mongoose schema mapping user attributes
+│   │       │   ├── conversation.model.js # Conversation schema
+│   │       │   └── message.model.js      # Message schema
 │   │       ├── routes
-│   │       │   └── auth.router.js     # Endpoint routes for authentication
-│   │       ├── index.js        # Main microservice port listener
-│   │       ├── package.json    # Auth microservice dependency manifest
-│   │       └── .env            # Auth Service database keys
+│   │       │   └── chat.route.js      # Chat interaction routes
+│   │       ├── index.js        # Chat microservice port listener
+│   │       ├── package.json    # Chat microservice dependencies
+│   │       └── .env            # Chat Service configuration
 │   └── shared                  # [Shared Docs](./backend/shared/README.md)
 │       └── redis
 │           └── redis.js        # Shared ioredis connector instance
@@ -207,6 +225,10 @@ npm install
 # Install Auth Service modules
 cd ../services/auth
 npm install
+
+# Install Chat Service modules
+cd ../chat
+npm install
 ```
 
 #### 4. Setup Authentication Credentials
@@ -235,7 +257,13 @@ cd backend/services/auth
 npm run dev
 ```
 
-**Terminal 3: Start Frontend Client**
+**Terminal 3: Start Chat Service**
+```bash
+cd backend/services/chat
+npm run dev
+```
+
+**Terminal 4: Start Frontend Client**
 ```bash
 cd frontend
 npm run dev
@@ -256,10 +284,12 @@ Create file at `backend/gateway/.env`:
 ```env
 PORT=8000
 AUTH_SERVICE_URL="http://localhost:8001"
+CHAT_SERVICE_URL="http://localhost:8002"
 FRONTEND_URL="http://localhost:5173"
 ```
 * `PORT`: Listening port for the Gateway server.
 * `AUTH_SERVICE_URL`: Port routing path for the Auth Service.
+* `CHAT_SERVICE_URL`: Port routing path for the Chat Service.
 * `FRONTEND_URL`: URL of the React client (used to bind CORS permissions).
 
 </details>
@@ -276,6 +306,19 @@ REDIS_URL="redis://localhost:6379"
 * `PORT`: Port where the Auth Service listens.
 * `MONGODB_URL`: Remote Atlas connection endpoint.
 * `REDIS_URL`: Connection string mapping local Redis socket.
+
+</details>
+
+<details>
+<summary>🔑 Click to view Chat Service Environment variables (.env)</summary>
+
+Create file at `backend/services/chat/.env`:
+```env
+PORT=8002
+MONGODB_URL="mongodb+srv://<username>:<password>@cluster.mongodb.net/multiagentx"
+```
+* `PORT`: Port where the Chat Service listens.
+* `MONGODB_URL`: Remote Atlas connection endpoint.
 
 </details>
 
@@ -301,9 +344,11 @@ All external HTTP traffic queries target the API Gateway (`:8000`).
 | HTTP Method | Gateway Endpoint | Target Microservice | Description | Auth Required |
 | :--- | :--- | :--- | :--- | :--- |
 | **GET** | `/` | Gateway | Verifies gateway server status. | No |
-| **GET** | `/auth` | Auth Service | Verifies authentication microservice status. | No |
-| **POST** | `/auth/login` | Auth Service | Verifies Google ID Token, logs/registers user, and issues a session cookie. | Yes (Firebase token) |
-| **POST** | `/auth/logout` | Auth Service | Clears cookie session headers and removes user state from Redis store. | Yes (Cookie session ID) |
+| **GET** | `/api/me` | Gateway | Retrieves current authenticated user context. | Yes |
+| **GET** | `/api/auth` | Auth Service | Verifies authentication microservice status. | No |
+| **POST** | `/api/auth/login` | Auth Service | Verifies Google ID Token, logs/registers user, and issues a session cookie. | Yes (Firebase token) |
+| **POST** | `/api/auth/logout` | Auth Service | Clears cookie session headers and removes user state from Redis store. | Yes (Cookie session ID) |
+| **ALL** | `/api/chat/*` | Chat Service | Handles all conversation and messaging logic. Proxied securely with custom headers. | Yes |
 
 ---
 
@@ -435,7 +480,7 @@ The backend node microservices are ready to run on platforms like **Render**, **
 ## 🎯 Future Improvements
 
 - [ ] Add Orchestrator microservice for task coordination.
-- [ ] Add Chat Agent with LLM (Ollama / Gemini) integration.
+- [x] Add Chat Agent with LLM (Ollama / Gemini) integration.
 - [ ] Add websocket layer to push agent logs to frontend in real time.
 - [ ] Implement Winston production logger and Correlation IDs.
 - [ ] Enable rate-limiting middleware (`express-rate-limit`) on Gateway.
