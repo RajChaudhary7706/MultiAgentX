@@ -1,23 +1,8 @@
 import { getAuth } from "firebase-admin/auth"
 import { app } from "../config/firebase.js"
 import User from "../models/user.model.js"
-import Redis from "ioredis"
 import crypto from "crypto"
-
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379")
-
-redis.on("error", (err) => {
-    console.error("Redis connection error:", err.message)
-})
-redis.on("connect", () => {
-    console.log("Redis connecting...")
-})
-redis.on("ready", () => {
-    console.log("Redis connected successfully")
-})
-redis.on("error", (err) => {
-    console.error("Redis connection error:", err.message)
-})
+import redis from "../../../shared/redis/redis.js"
 
 export const login = async (req, res) => {
     try {

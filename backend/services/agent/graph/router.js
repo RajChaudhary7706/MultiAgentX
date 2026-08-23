@@ -1,7 +1,7 @@
 import { getModel } from "../config/llmModels.js";
 
 export const router = async(state)=>{
-    const llmModel = getModel("router");
+    const llmModel = await getModel("router");
     const prompt = `
     You are a Router Agent.
 
@@ -25,4 +25,12 @@ export const router = async(state)=>{
     PDF Agent
     PPT Agent
     Search Agent
-    `}
+    `
+    const response = await llmModel.invoke(prompt);
+    console.log(response)
+    return {
+        ...state,
+        agent: response.content.trim().toLowerCase().replace(" agent", "").replace(" ", "_")
+    };
+
+}
