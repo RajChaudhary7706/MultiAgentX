@@ -3,9 +3,10 @@ export const proxyWithHeader = (serviceUrl) => {
     return proxy(serviceUrl, {
         proxyReqBodyDecorator: (proxyReqOpts, srcReq) => {
             if (srcReq.user) {
-                proxyReqOpts.headers["X-User-Id"] = srcReq.user.userId
+                proxyReqOpts.headers = proxyReqOpts.headers || {};
+                proxyReqOpts.headers["X-User-Id"] = srcReq.user.userId;
             }
-            return proxyReqOpts
+            return proxyReqOpts;
         }
-    })
-}
+    });
+};
