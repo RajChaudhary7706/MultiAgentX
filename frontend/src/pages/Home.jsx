@@ -1,7 +1,7 @@
 import { signInWithPopup } from 'firebase/auth'
 import React from 'react'
 import { auth, googleProvider } from '../../utils/firebase'
-import api from '../../utils/axios'
+import api from '../utils/axios'
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserdata } from '../redux/userSlice';

@@ -1,19 +1,8 @@
-import express from "express"
-import dotenv from "dotenv"
-import router from "./routes/agent.router.js"
-import connectdb from "../config/db.js"
-dotenv.config()
+import express from "express";
+import { agent } from "../controllers/agent.controller.js";
 
-const port = process.env.PORT
+const router = express.Router();
 
-const app=express()
-app.use(express.json())
-app.use("/",router)
-app.get("/",(req,res)=>{
-    res.json({message:"Hello from Agent"})
-})
+router.post("/chat", agent);
 
-app.listen(port,()=>{
-    console.log(`agent service started at ${port}`)
-    connectdb()
-})
+export default router;

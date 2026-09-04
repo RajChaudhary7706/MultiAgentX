@@ -6,6 +6,7 @@ import { visionAgent } from "../agents/vision.js";
 import { pdfAgent } from "../agents/pdf.agent.js";
 import { pptAgent } from "../agents/ppt.agent.js";
 import { searchAgent } from "../agents/search.agent.js";
+import { router } from "./router.js";
 
 const workflow = new StateGraph(agentState)
 

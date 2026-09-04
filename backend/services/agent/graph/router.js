@@ -2,6 +2,7 @@ import { getModel } from "../config/llmModels.js";
 
 export const router = async(state)=>{
     const llmModel = await getModel("router");
+    const userQuery = state.prompt;
     const prompt = `
     You are a Router Agent.
 

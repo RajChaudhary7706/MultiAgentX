@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { StateGraph } from "@langchain/langgraph";
-import { ChatGoogleGenerativeAI } from "@langchain/chat-google-generative-ai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import "dotenv/config";
 
 const openAI = new ChatOpenAI({
