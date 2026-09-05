@@ -14,12 +14,14 @@ function ChatInput() {
     const payload={
       prompt,conversationId:selectedConversation?._id
     }
+    
     dispatch(addMessage({ role: "user", content: prompt }))
     setValue("")
     const data=await sendMessage(payload)
     if (data?.response) {
       dispatch(addMessage({ role: "assistant", content: data.response }))
     }
+
   }
 
   return (

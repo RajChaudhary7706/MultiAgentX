@@ -24,9 +24,12 @@ function SideBar() {
     const getConv = async () => {
       const data = await getConverstion();
       dispatch(setConversations(data));
+      if (data?.length && !selectedConversation) {
+        dispatch(setSelectedConversations(data[0]));
+      }
     };
     getConv();
-  }, [userData?._id]);
+  }, [userData?._id, selectedConversation, dispatch]);
 
   const handleCreateConversation = async () => {
     const data = await createConverstion();
