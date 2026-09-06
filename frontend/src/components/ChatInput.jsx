@@ -2,26 +2,54 @@ import { Mic, Paperclip, Send } from 'lucide-react'
 import React, { useState } from 'react'
 import sendMessage from '../features/sendMessage'
 import { useDispatch, useSelector } from 'react-redux'
-import { addMessage } from '../redux/messageSlice'
+import { addMessage, setSelectedMessage } from '../redux/messageSlice'
+import { createConverstion } from '../features/createConversation'
+import { addConversations, setConvTitle, setSelectedConversations } from '../redux/conversationSlice'
+import api from '../utils/axios'
 
 function ChatInput() {
   const [value,setValue]=useState("")
   const {selectedConversation} = useSelector((state) => state.conversation)
   const dispatch = useDispatch()
   const handleSendMessage=async()=>{
-    const prompt = value.trim()
-    if (!prompt) return
-    const payload={
-      prompt,conversationId:selectedConversation?._id
+    let conversation=selectedConversation
+
+    if(!conversation){
+      const conv=await createConverstion()
+      dispatch(setSelectedConversations(conv))
+      dispatch(addConversations(conv))
+      conversation=conv
     }
-    
+
+    const prompt = value.trim()
+    if (!prompt || !conversation?._id) return
+
+    if (conversation.title === "New Chat") {
+      try {
+        const { data } = await api.post('/api/chat/update-conversation', {
+          id: conversation._id,
+          title: prompt
+        })
+        if (data?._id) {
+          dispatch(setConvTitle({ conversationId: conversation._id, title: data.title || prompt }))
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    const payload={
+      prompt,
+      conversationId: conversation._id
+    }
+
     dispatch(addMessage({ role: "user", content: prompt }))
     setValue("")
+
     const data=await sendMessage(payload)
     if (data?.response) {
       dispatch(addMessage({ role: "assistant", content: data.response }))
     }
-
   }
 
   return (

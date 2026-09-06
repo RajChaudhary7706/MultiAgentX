@@ -13,13 +13,14 @@ function ChatArea() {
   useEffect(()=>{
     const getMess = async()=>{
       if(selectedConversation){
+        if(selectedConversation.title=="New Chat") return
         const data = await getMessage(selectedConversation?._id)
         dispatch(setMessages(data))
       }
       
     }
     getMess()
-  },[dispatch, selectedConversation])
+  },[dispatch, selectedConversation?._id])
 
   return (
     <div className='flex-1 flex flex-col h-screen overflow-hidden'>
