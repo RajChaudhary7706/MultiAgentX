@@ -1,11 +1,18 @@
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getModel } from "../config/llmModels.js";
 import { getMemory } from "../config/memory.js";
+import { searchAgent } from "./search.agent.js";
 
 export const chatAgent = async (params) => {
     const state = params;
     const llm=await getModel("chat");
     const history=await getMemory(state.conversationId) || []
+
+    const searchContext = state.searchResults?`
+    Web Search Results:
+    ${JSON.stringify(state.searchResults)}
+    Answer the user using only the above search results:
+    `:""
 
 
     const systemPrompt=`You are MultiAgentX, a highly intelligent and 
@@ -13,6 +20,10 @@ export const chatAgent = async (params) => {
     wide range of tasks, including answering questions, providing 
     information, and engaging in conversation. Your goal is to
     provide accurate and helpful responses to user queries.
+    ${searchContext}
+    If searchContext exists:
+    -Use search results to answer.
+    -Do not mention internal tools.
     Rules:
     -for simple questions, greetings, and short queries, respond naturally in plain text.
     -for technical, educational, coding or detailed topics, use clean markdown.
