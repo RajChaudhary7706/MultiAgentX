@@ -49,8 +49,15 @@ function ChatInput() {
     setValue("")
 
     const data=await sendMessage(payload)
-    if (data?.response) {
+    if (data?.answer) {
       dispatch(addMessage({ role: "assistant", content: data.answer, images:data.images }))
+    }
+  }
+
+  const handleKeyDown=(event)=>{
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      handleSendMessage()
     }
   }
 
@@ -106,7 +113,7 @@ function ChatInput() {
                 key={agent.id}
                 type='button'
                 onClick={() => setSelectedAgent(agent.label)}
-                className={`flex-shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-3 rounded-full text-xs font-medium border transition-all
+                className={`flex-shrink-0 cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-3 rounded-full text-xs font-medium border transition-all
                   ${
                     isActive
                       ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white border-transparent shadow-[0_1px_8px_rgba(99,102,241,.35)]'
@@ -123,8 +130,10 @@ function ChatInput() {
             )
           })}
         </div>
+
         <textarea placeholder='Ask Anything...'
         onChange={(e)=>setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
         value={value}
         className='w-full bg-transparent outline-none resize-none text-[14px] text-slate-200 placeholder:text-slate-600 leading-relaxed [scrollbar-width:none] [$::-webkit-scrollbar]:hidden disabled:opacity-50' 
         rows={3}/>

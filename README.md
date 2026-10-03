@@ -70,6 +70,9 @@ MultiAgentX is a secure, distributed multi-agent system built on a microservices
 ### ⚡ Caching (Redis)
 * **Session Persistence**: Stores serialized JSON user session data under an ephemeral cache with a configurable Time-To-Live (TTL) expiration window (7 days).
 
+### 🤖 Multi-Agent Orchestration
+* **LangGraph Integration**: Uses a `StateGraph` router to orchestrate specialized AI agents for different tasks (Chat, Coding, Vision, PDF, PPT, and Web Search).
+
 ### 🐳 Containerization
 * **Dockerized Infrastructure**: Includes a Docker Compose manifest to quickly bootstrap a localized Redis instance with port mappings.
 
@@ -116,15 +119,21 @@ graph TD
     AuthService -->|2. Queries / Writes profiles| MongoDB[(MongoDB Atlas)]
     AuthService -->|3. Saves Session State| Redis[(Redis Cache :6379)]
     ChatService -->|Reads / Writes Messages| MongoDB
-    AgentService -->|Uses LLM| LangChain[LangChain Graph]
+    AgentService -->|Orchestrates| Router[LangGraph Router]
+    Router -->|Routes to| ChatAgent(Chat Agent)
+    Router -->|Routes to| CodingAgent(Coding Agent)
+    Router -->|Routes to| VisionAgent(Vision Agent)
+    Router -->|Routes to| SearchAgent(Search Agent)
+    Router -->|Routes to| PDFAgent(PDF Agent)
+    Router -->|Routes to| PPTAgent(PPT Agent)
 ```
 
 ### Component Breakdown
 1. **Frontend Client**: Manages login buttons, coordinates authentication state, and renders responsive Tailwind-styled views.
 2. **API Gateway (`:8000`)**: The single entrypoint for frontend requests. Resolves CORS permissions, processes incoming cookies, handles custom header injection via `proxyWithHeader`, and handles reverse proxying.
 3. **Auth Service (`:8001`)**: Validates Firebase credentials, persists user profiles inside MongoDB, handles session generation/revocation, and communicates with Redis.
-4. **Chat Service (`:8002`)**: Handles conversation state, message history, and LLM orchestration interactions.
-5. **Agent Service (`:8003`)**: Incorporates LangChain/LangGraph logic to process and respond to tasks.
+4. **Chat Service (`:8002`)**: Manages conversations and message histories using Mongoose models, tracking context for the user interactions.
+5. **Agent Service (`:8003`)**: Implements LangChain and LangGraph to route queries to specialized agents (`chat`, `coding`, `vision`, `pdf`, `ppt`, and `search`) based on user intent.
 
 ---
 
@@ -146,9 +155,9 @@ MultiAgentX
 │   │   └── .env                # Gateway environmental configs
 │   ├── services                # [Services Docs](./backend/services/README.md)
 │   │   ├── agent               # [Agent Service Docs](./backend/services/agent/README.md)
-│   │   │   ├── agents          # Custom LangChain agents
-│   │   │   ├── config          # Database connection
-│   │   │   ├── graph           # LangGraph configuration
+│   │   │   ├── agents          # Custom LangChain agents (chat, coding, search, vision, pdf, ppt)
+│   │   │   ├── config          # Database connection and LLM configurations
+│   │   │   ├── graph           # LangGraph workflow, state, and router definitions
 │   │   │   ├── index.js        # Main microservice port listener
 │   │   │   ├── package.json    # Agent microservice dependency manifest
 │   │   │   └── .env            # Agent Service keys
@@ -391,8 +400,8 @@ All external HTTP traffic queries target the API Gateway (`:8000`).
 | **GET** | `/api/auth` | Auth Service | Verifies authentication microservice status. | No |
 | **POST** | `/api/auth/login` | Auth Service | Verifies Google ID Token, logs/registers user, and issues a session cookie. | Yes (Firebase token) |
 | **POST** | `/api/auth/logout` | Auth Service | Clears cookie session headers and removes user state from Redis store. | Yes (Cookie session ID) |
-| **ALL** | `/api/chat/*` | Chat Service | Handles all conversation and messaging logic. Proxied securely with custom headers. | Yes |
-| **ALL** | `/api/agent/*` | Agent Service | Interacts with LangChain-based AI agents. | Yes |
+| **GET/POST** | `/api/chat/*` | Chat Service | Specific endpoints: `/create-conversation`, `/get-conversation`, `/update-conversation`, `/save-message`, `/get-message/:id`. Proxied securely. | Yes |
+| **POST** | `/api/agent/chat` | Agent Service | Entrypoint for LangGraph router to interact with specialized AI agents (coding, vision, search, etc.). | Yes |
 
 ---
 
@@ -408,7 +417,28 @@ We use MongoDB and Mongoose structures to manage user identities.
   email: { type: String },                     // User registration email
   avatar: { type: String },                    // Profile photo URL
   createdAt: { type: Date },                   // Managed automatically by timestamps:true
-  updatedAt: { type: Date }                    // Managed automatically by timestamps:true
+}
+```
+
+### Schema: `Conversation`
+```javascript
+{
+  title: { type: String, default: "New Chat" }, // Title of the conversation
+  userId: { type: String },                     // Owner of the conversation
+  createdAt: { type: Date },
+  updatedAt: { type: Date }
+}
+```
+
+### Schema: `Message`
+```javascript
+{
+  conversationId: { type: ObjectId, ref: "Conversation" }, // Reference to the parent conversation
+  role: { type: String, enum: ["user", "assistant"] },     // Role of the sender
+  content: { type: String },                               // Text content of the message
+  images: [{ type: String }],                              // Optional array of image attachments
+  createdAt: { type: Date },
+  updatedAt: { type: Date }
 }
 ```
 
@@ -523,7 +553,7 @@ The backend node microservices are ready to run on platforms like **Render**, **
 
 ## 🎯 Future Improvements
 
-- [ ] Add Orchestrator microservice for task coordination.
+- [x] Add Orchestrator microservice for task coordination (Implemented via LangGraph router).
 - [x] Add Chat Agent with LLM (Ollama / Gemini) integration.
 - [ ] Add websocket layer to push agent logs to frontend in real time.
 - [ ] Implement Winston production logger and Correlation IDs.
