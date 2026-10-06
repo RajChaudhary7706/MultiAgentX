@@ -8,12 +8,12 @@ export const agent = async (req,res)=>{
         const {prompt,conversationId,agent} = req.body
         
         await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{content:prompt,conversationId,role:"user"})
+        await addMessage(conversationId,"User",prompt)
 
         const result=await graph.invoke({
             prompt,conversationId,agent
         })
         const response=result.aiResponse
-        await addMessage(conversationId,"User",prompt)
         await addMessage(conversationId,"assistant",response)
         await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{content:response,conversationId,role:"assistant",images:result.images})
 

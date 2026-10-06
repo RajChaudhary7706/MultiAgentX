@@ -23,7 +23,7 @@ function ChatArea() {
   },[dispatch, selectedConversation?._id])
 
   return (
-    <div className='flex-1 flex flex-col h-screen overflow-hidden'>
+    <div className='min-w-0 flex-1 flex flex-col h-screen overflow-hidden'>
       <Nav/>
       <MessageList/>
       <ChatInput/>

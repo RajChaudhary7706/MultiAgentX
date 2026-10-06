@@ -50,7 +50,7 @@ function ChatInput() {
 
     const data=await sendMessage(payload)
     if (data?.answer) {
-      dispatch(addMessage({ role: "assistant", content: data.answer, images:data.images }))
+      dispatch(addMessage({ role: "assistant", content: data?.answer, images:data?.images }))
     }
   }
 

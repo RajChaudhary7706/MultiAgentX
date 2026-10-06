@@ -44,12 +44,17 @@ export const chatAgent = async (params) => {
     ]
 
     history.forEach(msg => {
-        if(msg.role.toLowerCase()==="user"){
+        if(msg.role?.toLowerCase()==="user"){
             messages.push(new HumanMessage(msg.content))
         }else{
             messages.push(new AIMessage(msg.content))
         }
     });
+
+    const lastMsg = history[history.length - 1];
+    if (!lastMsg || lastMsg.role?.toLowerCase() !== "user" || lastMsg.content !== state.prompt) {
+        messages.push(new HumanMessage(state.prompt));
+    }
 
     const response = await llm.invoke(messages)
     return {

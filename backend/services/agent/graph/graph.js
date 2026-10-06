@@ -26,6 +26,7 @@ workflow.addConditionalEdges("router",(state)=>{
         case "coding":
             return "coding"
         case "vision":
+        case "image":
             return "vision"
         case "pdf":
             return "pdf"
