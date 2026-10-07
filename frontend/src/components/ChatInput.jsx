@@ -2,7 +2,7 @@ import { Code2, FileText, Globe, ImageIcon, MessageSquare, Mic, Paperclip, Prese
 import React, { useState } from 'react'
 import sendMessage from '../features/sendMessage'
 import { useDispatch, useSelector } from 'react-redux'
-import { addMessage, setSelectedMessage } from '../redux/messageSlice'
+import { addMessage, setArtifacts, setSelectedMessage } from '../redux/messageSlice'
 import { createConverstion } from '../features/createConversation'
 import { addConversations, setConvTitle, setSelectedConversations } from '../redux/conversationSlice'
 import api from '../utils/axios'
@@ -48,7 +48,10 @@ function ChatInput() {
     dispatch(addMessage({ role: "user", content: prompt }))
     setValue("")
 
-    const data=await sendMessage(payload)
+    const data = await sendMessage(payload)
+    if (!data) return
+
+    dispatch(setArtifacts(data.artifacts || []))
     if (data?.answer) {
       dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images, artifacts: data.artifacts }))
     }

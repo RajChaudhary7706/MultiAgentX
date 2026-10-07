@@ -1,86 +1,82 @@
-import React, { useState } from 'react'
-import { Check, Copy, FileCode2 } from 'lucide-react'
-import { useSelector } from 'react-redux'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import React, { useState } from 'react';
+import { Code2, Copy, Eye, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { motion } from 'motion/react';
 
-export default function Artifact() {
-  const messages = useSelector((state) => state.message.messages)
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0)
-  const [copied, setCopied] = useState(false)
-  const latestArtifactMessage = [...messages].reverse().find((message) =>
-    message.artifacts?.some((artifact) => artifact.files?.length > 0)
-  )
-  const files = latestArtifactMessage?.artifacts?.flatMap((artifact) => artifact.files) || []
-  const selectedFile = files[selectedFileIndex] || files[0]
+function Artifact() {
+  const [collapsed, setCollapsed] = useState(false);
+  const { artifacts = [] } = useSelector((state) => state.message ?? { artifacts: [] });
+  const [tab, setTab] = useState('code');
 
-  const copyFile = async () => {
-    if (!selectedFile) return
-    try {
-      await navigator.clipboard.writeText(selectedFile.content)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (error) {
-      console.error('Failed to copy artifact:', error)
-    }
-  }
+  if (!artifacts.length) return null;
+
+  const title = artifacts[0]?.title || 'Artifact';
 
   return (
-    <aside className='hidden lg:flex h-full w-[min(38vw,480px)] min-w-[320px] flex-col overflow-hidden border-l border-white/[0.06] bg-[#0d0f14]'>
-      <header className='flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] px-4'>
-        <div className='flex items-center gap-2 text-sm font-medium text-slate-200'>
-          <FileCode2 size={16} className='text-emerald-400' />
-          <span>Artifact</span>
-        </div>
-        {selectedFile && (
+    <motion.div
+      initial={{ width: '350px' }}
+      animate={{ width: collapsed ? 48 : 350 }}
+      transition={{ duration: 0.25, ease: 'easeInOut' }}
+      className="hidden lg:flex h-full border-l border-white/[0.06] flex-col overflow-hidden shrink-0 w-[250px]"
+    >
+      {!collapsed ? 
+        <div className="h-14 px-4 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
           <button
-            type='button'
-            onClick={copyFile}
-            title={copied ? 'Copied' : 'Copy file'}
-            aria-label={copied ? 'Copied file contents' : 'Copy file contents'}
-            className='flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-white/[0.06] hover:text-white'
+            type="button"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0"
+            onClick={() => setCollapsed(true)}
           >
-            {copied ? <Check size={15} className='text-emerald-400' /> : <Copy size={15} />}
+            <PanelRightClose size={16} />
           </button>
-        )}
-      </header>
-
-      {files.length > 0 ? (
-        <>
-          <nav className='flex shrink-0 gap-1 overflow-x-auto border-b border-white/[0.06] px-2 py-2 [scrollbar-width:none]'>
-            {files.map((file, index) => (
-              <button
-                key={`${file.name}-${index}`}
-                type='button'
-                onClick={() => { setSelectedFileIndex(index); setCopied(false) }}
-                aria-pressed={(files[selectedFileIndex] || files[0]) === file}
-                className={`max-w-48 shrink-0 truncate rounded-md px-2.5 py-1.5 text-xs ${
-                  (files[selectedFileIndex] || files[0]) === file
-                    ? 'bg-white/[0.08] text-white'
-                    : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
-                }`}
-              >
-                {file.name}
-              </button>
-            ))}
-          </nav>
-          <div className='min-h-0 flex-1 overflow-auto'>
-            <SyntaxHighlighter
-              language={selectedFile.name.split('.').pop()}
-              style={oneDark}
-              showLineNumbers
-              wrapLongLines
-              customStyle={{ margin: 0, minHeight: '100%', padding: '16px', background: '#0d1117', fontSize: '12px', lineHeight: '1.6' }}
-            >
-              {selectedFile.content}
-            </SyntaxHighlighter>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex items-center justify-center w-6 h-6 rounded-md bg-indigo-500/10 border border-indigo-500/20 shrink-0">
+              <Code2 className="text-indigo-400" size={12} />
+            </div>
+            <div className="text-[13px] font-medium text-slate-200 truncate">{title}</div>
           </div>
-        </>
-      ) : (
-        <div className='flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-600'>
-          Generated code will appear here.
+          <div className="flex items-center gap-1 shrink-0">
+            <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-200
+            hover:bg-white/[0.05] rounded-lg transition-colors duration-150 bg-transparent border-none cursor-pointer"
+            >
+              <Copy size={15} />
+            </button>
+          </div>
+
+          <div className='flex items-center gap-1 bg-white/[0.04] border-white/[0.06] p-1 rounded-lg'>
+            <button onClick={()=>setTab("code")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150
+              ${tab==="code" ? "bg-indigo-500 text-white" : "text-slate-500 hover:text-slate-200"}`}>
+              <Code2 size={11}/> Code
+            </button>
+            <button onClick={()=>setTab("preview")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150
+              ${tab==="preview" ? "bg-indigo-500 text-white" : "text-slate-500 hover:text-slate-200"}`}>
+                <Eye size={11}/> Preview
+            </button>
+          </div>
+
         </div>
-      )}
-    </aside>
-  )
+        : 
+        <div className="hidden lg:flex h-full border-l border-white/[0.06] bg-[#0d0f14] flex-col items-start py-4 gap-3 shrink-0">
+          <button
+            type="button"
+            className="ml-2 flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0"
+            onClick={() => setCollapsed(false)}
+          >
+            <PanelRightOpen size={16} />
+          </button>
+          <div className="flex items-center justify-start flex-1 min-w-0 pl-2">
+            <div
+              className="text-[10px] font-medium text-slate-600 tracking-[0.2em] uppercase whitespace-nowrap"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+              {title}
+            </div>
+          </div>
+        </div>
+      }
+    </motion.div>
+  );
 }
+
+export default Artifact;

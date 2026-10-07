@@ -88,6 +88,6 @@ For all coding help:
         ...state,
         aiResponse: response.content,
         artifacts: files.length ? [{ id: Date.now(), type: "Code", files }] : [],
-    };
+    }; 
     
 };

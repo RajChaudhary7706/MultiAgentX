@@ -4,7 +4,7 @@ import ChatInput from "./ChatInput";
 import MessageList from "./MessageList";
 import Nav from "./Nav";
 import getMessage from "../features/getMessage";
-import { setMessages } from "../redux/messageSlice";
+import { setArtifacts, setMessages } from "../redux/messageSlice";
 
 function ChatArea() {
   const {selectedConversation} = useSelector((state) => state.conversation)
@@ -16,6 +16,8 @@ function ChatArea() {
         if(selectedConversation.title=="New Chat") return
         const data = await getMessage(selectedConversation?._id)
         dispatch(setMessages(data))
+        const latestArtifactsMessage = [...data].reverse().find(msg => msg.artifacts && msg.artifacts.length > 0)
+        dispatch(setArtifacts(latestArtifactsMessage?.artifacts || []))
       }
       
     }
