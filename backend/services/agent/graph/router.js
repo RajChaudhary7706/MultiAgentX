@@ -7,8 +7,16 @@ export const router = async(state)=>{
             agent:state.agent
         };
     }
+    const userQuery = state.prompt || "";
+    const codingIntent = /\b(?:debug(?:ging)?|code review|review (?:this|the|my) code|write (?:some )?code|programming|refactor(?:ing)?|fix (?:this |the )?(?:bug|error|issue)|stack trace|unit tests?)\b/i;
+    if(codingIntent.test(userQuery)){
+        return {
+            ...state,
+            agent:"coding"
+        };
+    }
+
     const llmModel = await getModel("router");
-    const userQuery = state.prompt;
     const prompt = `
     You are a Router Agent.
 
@@ -16,7 +24,7 @@ export const router = async(state)=>{
 
     Available agents:
     1. Chat Agent: Handles general conversation, greetings, and general questions.
-    2. Coding Agent: Handles programming, debugging, software development, and technical coding queries.
+    2. Coding Agent: Handles writing or explaining code, programming, debugging errors and bugs, code reviews, refactoring, implementation, and software tests.
     3. Vision Agent: Handles image analysis, image generation, and vision-related queries.
     4. PDF Agent: Handles PDF creation, analysis, summarization, or questions about PDFs.
     5. PPT Agent: Handles PowerPoint creation, analysis, or presentation-related queries.

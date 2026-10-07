@@ -15,11 +15,12 @@ export const agent = async (req,res)=>{
         })
         const response=result.aiResponse
         await addMessage(conversationId,"assistant",response)
-        await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{content:response,conversationId,role:"assistant",images:result.images})
+        await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{content:response,conversationId,role:"assistant",images:result.images,artifacts:result.artifacts})
 
         return res.status(200).json({
-            answer:result.aiResponse,
-            images:result.images
+            answer:result?.aiResponse,
+            images:result?.images,
+            artifacts:result?.artifacts
         })
     }
     catch(error){

@@ -5,8 +5,12 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-function MessageBubble({ role, content, images = [] }) {
+function MessageBubble({ role, content, images = [], artifacts = [] }) {
   const isUser = role === "user";
+  const hasCodeArtifacts = artifacts.some((artifact) => artifact.files?.length > 0)
+  const displayContent = hasCodeArtifacts
+    ? content.replace(/```[^\r\n]*\r?\n[\s\S]*?```/g, "Code is available in the Artifact panel.")
+    : content
   const [lightBox, setLightBox] = useState(null)
   const [copiedCode, setCopiedCode] = useState("")
 
@@ -152,7 +156,7 @@ function MessageBubble({ role, content, images = [] }) {
             }
           }}
         >
-          {content}
+          {displayContent}
         </ReactMarkdown>
 
       </div>
