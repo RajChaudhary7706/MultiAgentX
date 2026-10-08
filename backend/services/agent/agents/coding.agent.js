@@ -1,6 +1,7 @@
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getModel } from "../config/llmModels.js";
 import { getMemory } from "../config/memory.js";
+import { searchTool } from "../config/tavily.js";
 
 const extensionByLanguage = {
     bash: "sh",
@@ -39,6 +40,26 @@ export const codingAgent = async (params) => {
     const state = params;
     const llm = await getModel("coding");
     const history = (await getMemory(state.conversationId)) || [];
+    let imageAssets = [];
+
+    if (/\b(image|images|photo|photos|picture|pictures|visual|gallery|food|product|restaurant|menu|website|webpage|web app|landing page|frontend|ui|interface)\b/i.test(state.prompt)) {
+        try {
+            const imageSearch = await searchTool.invoke({
+                query: `${state.prompt.slice(0, 240)} relevant photographs`,
+                includeImages: true,
+            });
+            imageAssets = (Array.isArray(imageSearch?.images) ? imageSearch.images : [])
+                .map(image => typeof image === "string" ? { url: image } : image)
+                .filter(image => /^https?:\/\//i.test(image?.url ?? ""))
+                .slice(0, 6);
+        } catch (error) {
+            console.warn("Image search failed for coding request:", error.message);
+        }
+    }
+
+    const imageAssetsInstruction = imageAssets.length
+        ? `\n\nRelevant image assets found for this request:\n${imageAssets.map((image, index) => `${index + 1}. ${image.description ? `${image.description}: ` : ""}${image.url}`).join("\n")}\nUse these exact URLs as actual image sources in the generated UI. Include descriptive alt text and responsive object-fit styling. Do not substitute gray blocks or placeholder labels.`
+        : "";
 
     const systemPrompt = `You are MultiAgentX Coding Specialist, an expert software engineer and technical assistant. Help across the full software development lifecycle: understand requirements, design solutions, write and explain code, debug errors, review code, test behavior, and improve maintainability.
 
@@ -63,10 +84,22 @@ For all coding help:
 - Use clean, readable, maintainable code and follow established project patterns.
 - Put code in fenced blocks with the correct language identifier.
 - For code intended to be saved, put "File: relative/path" immediately before its fenced code block and include complete file contents when practical.
-- Use concise Markdown headings and lists when they improve readability; keep simple answers direct.`;
+- Use concise Markdown headings and lists when they improve readability; keep simple answers direct.
+
+Images:
+When creating a website, app, or UI where imagery improves the result, include relevant real images in the code instead of empty gray boxes or placeholder labels.
+- When image URLs are provided in the conversation context, use those exact URLs as image sources in the generated HTML or JSX, with descriptive alt text and responsive sizing/cropping.
+- Choose images that match the requested subject; do not use generic placeholder services, fabricated local image paths, CSS-only gray image blocks, or instructions asking the user to replace a placeholder later.
+- If the request does not need imagery, do not add decorative images unnecessarily.
+- If no usable image URL is available, say so instead of presenting a placeholder as a real image.
+- This agent returns code as fenced blocks for artifact extraction. Do not return JSON unless the user explicitly requests JSON.
+- Do not claim to generate or attach binary image files; no image-generation service is configured. Use real hosted image URLs instead.
+
+`;
+
 
     const messages = [
-        new SystemMessage(systemPrompt)
+        new SystemMessage(`${systemPrompt}${imageAssetsInstruction}`)
     ];
 
     history.forEach(msg => {
