@@ -1,40 +1,28 @@
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getModel } from "../config/llmModels.js";
-import { getMemory } from "../config/memory.js";
+import { getModel } from "../config/llmModels.js"
+import axios from "axios"
 
-export const visionAgent = async (params) => {
-    const state = params;
-    const llm = await getModel("chat");
-    const history = (await getMemory(state.conversationId)) || [];
+export const visionAgent=async (state)=>{
+    const llm=await getModel("image")
+    const res=await llm.invoke(`
+        You are an elite AI image prompt engineer.
+        Convert the user request into a highly detailed image generation prompt.
+        Requirements:
+        -Cinematic
+        -Professional
+        -High detail
+        -Sharp focus
+        -8k quality
+        -Photorealistic
+        -Depth of field
+        -Professional photography
+        -Stunning visula
 
-    const systemPrompt = `You are MultiAgentX Vision & Design Specialist, an expert in visual creativity, image descriptions, visual design, UI/UX aesthetics, and scene breakdown.
-Your goal is to provide insightful visual analysis, detailed creative prompts, or design recommendations based on user inquiries.
-
-Rules:
-- Provide rich, descriptive visual details including lighting, composition, color palettes, and stylistic nuances.
-- Use markdown headings, bullet points, and clean formatting.
-- Be imaginative, precise, and visually inspiring.`;
-
-    const messages = [
-        new SystemMessage(systemPrompt)
-    ];
-
-    history.forEach(msg => {
-        if (msg.role?.toLowerCase() === "user") {
-            messages.push(new HumanMessage(msg.content));
-        } else {
-            messages.push(new AIMessage(msg.content));
-        }
-    });
-
-    const lastMsg = history[history.length - 1];
-    if (!lastMsg || lastMsg.role?.toLowerCase() !== "user" || lastMsg.content !== state.prompt) {
-        messages.push(new HumanMessage(state.prompt));
-    }
-
-    const response = await llm.invoke(messages);
-    return {
-        ...state,
-        aiResponse: response.content
-    };
-};
+        Return only the image prompt.
+        User Request:
+        ${state.prompt}
+        
+        `)
+        const prompt=res.content.trim()
+        const imageUrl=`https://image.pollination.ai/prompt/${encodeURIComponent(prompt)}`
+        const imageRes = await axios.get(imageUrl,{responseType:"arraybuffer"})
+}
