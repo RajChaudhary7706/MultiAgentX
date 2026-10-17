@@ -2,7 +2,7 @@ import {StateGraph} from "@langchain/langgraph";
 import { agentState } from "./state.js";
 import { chatAgent } from "../agents/chat.agent.js";
 import { codingAgent } from "../agents/coding.agent.js";
-import { visionAgent } from "../agents/vision.js";
+import { visionAgent } from "../agents/vision.agent.js";
 import { pdfAgent } from "../agents/pdf.agent.js";
 import { pptAgent } from "../agents/ppt.agent.js";
 import { searchAgent } from "../agents/search.agent.js";
@@ -26,7 +26,6 @@ workflow.addConditionalEdges("router",(state)=>{
         case "coding":
             return "coding"
         case "vision":
-        case "image":
             return "vision"
         case "pdf":
             return "pdf"

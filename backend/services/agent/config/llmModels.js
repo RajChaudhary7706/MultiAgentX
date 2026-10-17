@@ -20,6 +20,8 @@ export const getModel = (agent)=>{
             return geminiAI;
         case "coding":
             return openAI;
+        case "vision":
+            return openAI;
         default:
             return openAI;
     }
