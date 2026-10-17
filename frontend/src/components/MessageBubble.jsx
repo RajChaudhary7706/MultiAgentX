@@ -7,10 +7,13 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 function MessageBubble({ role, content, images = [], artifacts = [] }) {
   const isUser = role === "user";
-  const hasCodeArtifacts = artifacts.some((artifact) => artifact.files?.length > 0)
+  const hasImages = Array.isArray(images) && images.length > 0;
+  const hasCodeArtifacts = Array.isArray(artifacts) && artifacts.some((artifact) => artifact.files?.length > 0)
   const displayContent = hasCodeArtifacts
     ? content.replace(/```[^\r\n]*\r?\n[\s\S]*?```/g, "Code is available in the Artifact panel.")
     : content
+  const imageDownloadLink = (content?.match(/\[(?:Download Image)\]\((https?:\/\/[^)]+)\)/i)?.[1] || images[0] || "")
+  const isImageResult = hasImages && /Image Generated Successfully|Download Image|Link expires/i.test(content || "")
   const [lightBox, setLightBox] = useState(null)
   const [copiedCode, setCopiedCode] = useState("")
 
@@ -34,142 +37,181 @@ function MessageBubble({ role, content, images = [], artifacts = [] }) {
           : "text-slate-200 rounded-tl-sm bg-[#161922] border border-white/[0.06]"
         }`}>
 
-        {images && images.length > 0 && (
-          <div className='flex flex-wrap gap-3 mb-3'>
-            {images.map((img, i) => (
+        {isImageResult ? (
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-[#101821] shadow-inner max-w-[280px]">
               <img
-                key={i}
-                src={img}
-                onClick={() => setLightBox(img)}
-                alt={`image-${i}`}
+                src={images[0]}
+                onClick={() => setLightBox(images[0])}
+                alt="Generated preview"
                 loading="lazy"
                 onError={(e) => e.currentTarget.remove()}
-                className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
+                className="h-[180px] w-full object-cover cursor-zoom-in transition hover:opacity-95"
               />
-            ))}
+            </div>
+
+            <div className="space-y-2 text-sm md:text-[15px] text-slate-100">
+              <p className="text-[15px] md:text-[17px] font-semibold text-pink-400">Image Generated Successfully</p>
+
+              {imageDownloadLink && (
+                <a
+                  href={imageDownloadLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-pink-300 hover:text-pink-200 underline break-all"
+                >
+                  <span className="text-lg">⬇</span>
+                  <span>Download Image</span>
+                </a>
+              )}
+
+              <p className="text-slate-300">Link expires in 10 minutes.</p>
+            </div>
           </div>
-        )}
-
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            h1: ({ children }) => (
-              <h1 className='text-2xl font-bold mt-5 mb-3 text-white'>{children}</h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className='text-xl font-bold mt-4 mb-2 text-white'>{children}</h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className='text-lg font-bold mt-3 mb-2 text-white'>{children}</h3>
-            ),
-            p: ({ children }) => (
-              <p className='mb-3 whitespace-pre-wrap break-words leading-relaxed'>{children}</p>
-            ),
-            ul: ({ children }) => (
-              <ul className='list-disc pl-5 space-y-1 my-2'>{children}</ul>
-            ),
-            ol: ({ children }) => (
-              <ol className='list-decimal pl-5 space-y-1 my-2'>{children}</ol>
-            ),
-            table: ({ children }) => (
-              <div className='overflow-x-auto my-4'>
-                <table className='min-w-full border border-white/10'>
-                  {children}
-                </table>
+        ) : (
+          <>
+            {images && images.length > 0 && (
+              <div className='flex flex-wrap gap-3 mb-3'>
+                {images.map((img, i) => (
+                  <img
+                    key={i}
+                    src={img}
+                    onClick={() => setLightBox(img)}
+                    alt={`image-${i}`}
+                    loading="lazy"
+                    onError={(e) => e.currentTarget.remove()}
+                    className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
+                  />
+                ))}
               </div>
-            ),
-            th: ({ children }) => (
-              <th className='border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold text-white'>
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className='border border-white/10 px-3 py-2'>
-                {children}
-              </td>
-            ),
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                className="text-indigo-400 hover:text-indigo-300 underline inline-flex items-center gap-1"
-              >
-                {children}
-                <ExternalLink size={14} />
-              </a>
-            ),
-            code: ({ className, children }) => {
-              const value = String(children).trim();
+            )}
 
-              if (!className) {
-                return (
-                  <code className='px-1.5 py-0.5 rounded bg-white/10 text-pink-400 font-mono text-[13px]'>
-                    {value}
-                  </code>
-                )
-              }
+            {content && content.trim() && (
+              <div className="text-sm md:text-[15px]">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className='text-2xl font-bold mt-5 mb-3 text-white'>{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className='text-xl font-bold mt-4 mb-2 text-white'>{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className='text-lg font-bold mt-3 mb-2 text-white'>{children}</h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className='mb-3 whitespace-pre-wrap break-words leading-relaxed'>{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className='list-disc pl-5 space-y-1 my-2'>{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className='list-decimal pl-5 space-y-1 my-2'>{children}</ol>
+                    ),
+                    table: ({ children }) => (
+                      <div className='overflow-x-auto my-4'>
+                        <table className='min-w-full border border-white/10'>
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th className='border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold text-white'>
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className='border border-white/10 px-3 py-2'>
+                        {children}
+                      </td>
+                    ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 underline inline-flex items-center gap-1"
+                      >
+                        {children}
+                        <ExternalLink size={14} />
+                      </a>
+                    ),
+                    code: ({ className, children }) => {
+                      const value = String(children).trim();
 
-              const language = className?.replace("language-", "")
+                      if (!className) {
+                        return (
+                          <code className='px-1.5 py-0.5 rounded bg-white/10 text-pink-400 font-mono text-[13px]'>
+                            {value}
+                          </code>
+                        )
+                      }
 
-              return (
-                <div className='my-4 overflow-hidden rounded-xl border border-white/10 bg-[#111318]'>
-                  <div className='flex items-center justify-between bg-[#1b1d24] border-b border-white/10 px-4 py-2'>
-                    <span className='uppercase text-xs font-semibold tracking-wider text-slate-400'>
-                      {language || "code"}
-                    </span>
-                    <button
-                      type="button"
-                      className='flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition cursor-pointer'
-                      onClick={() => copyCode(value)}
-                    >
-                      {copiedCode === value ? (
-                        <>
-                          <Check size={14} className="text-emerald-400" />
-                          <span className="text-emerald-400 font-medium">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={14} />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <SyntaxHighlighter
-                    language={language || "text"}
-                    style={oneDark}
-                    wrapLines
-                    showLineNumbers
-                    customStyle={{
-                      margin: 0,
-                      padding: "16px",
-                      background: "#0d1117",
-                      fontSize: "13px",
-                      lineHeight: "1.6"
-                    }}
-                  >
-                    {value}
-                  </SyntaxHighlighter>
-                </div>
-              )
-            },
-            img:({src})=>{
-              if(!src) return null;
-              return(
-                <img
-                src={src}
-                onClick={()=>setLightBox(src)}
-                loading='lazy'
-                onError={(e)=>e.currentTarget.remove()}
-                className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
-                />
-              )
-            }
-          }}
-        >
-          {displayContent}
-        </ReactMarkdown>
+                      const language = className?.replace("language-", "")
+
+                      return (
+                        <div className='my-4 overflow-hidden rounded-xl border border-white/10 bg-[#111318]'>
+                          <div className='flex items-center justify-between bg-[#1b1d24] border-b border-white/10 px-4 py-2'>
+                            <span className='uppercase text-xs font-semibold tracking-wider text-slate-400'>
+                              {language || "code"}
+                            </span>
+                            <button
+                              type="button"
+                              className='flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition cursor-pointer'
+                              onClick={() => copyCode(value)}
+                            >
+                              {copiedCode === value ? (
+                                <>
+                                  <Check size={14} className="text-emerald-400" />
+                                  <span className="text-emerald-400 font-medium">Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={14} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <SyntaxHighlighter
+                            language={language || "text"}
+                            style={oneDark}
+                            wrapLines
+                            showLineNumbers
+                            customStyle={{
+                              margin: 0,
+                              padding: "16px",
+                              background: "#0d1117",
+                              fontSize: "13px",
+                              lineHeight: "1.6"
+                            }}
+                          >
+                            {value}
+                          </SyntaxHighlighter>
+                        </div>
+                      )
+                    },
+                    img:({src})=>{
+                      if(!src) return null;
+                      return(
+                        <img
+                        src={src}
+                        onClick={()=>setLightBox(src)}
+                        loading='lazy'
+                        onError={(e)=>e.currentTarget.remove()}
+                        className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
+                        />
+                      )
+                    }
+                  }}
+                >
+                  {displayContent}
+                </ReactMarkdown>
+              </div>
+            )}
+          </>
+        )}
 
       </div>
       {lightBox && (

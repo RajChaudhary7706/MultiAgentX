@@ -1,40 +1,53 @@
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getModel } from "../config/llmModels.js";
-import { getMemory } from "../config/memory.js";
+import { getModel } from "../config/llmModels.js"
+import { generatePdf } from "../utils/generatePdf.js"
+import { getFromS3 } from "../utils/getFromS3.js"
+import { uploadToS3 } from "../utils/uploadToS3.js"
 
-export const pdfAgent = async (params) => {
-    const state = params;
-    const llm = await getModel("chat");
-    const history = (await getMemory(state.conversationId)) || [];
-
-    const systemPrompt = `You are MultiAgentX Document Specialist, an expert in document structuring, PDF content analysis, synthesis, and report writing.
-Your goal is to provide well-organized, comprehensive summaries, formatted reports, and document outlines.
-
-Rules:
-- Structure content logically with executive summary, key sections, and actionable takeaways.
-- Use clear markdown formatting (tables, bullet points, headers).
-- Be accurate, concise, and professional.`;
-
-    const messages = [
-        new SystemMessage(systemPrompt)
-    ];
-
-    history.forEach(msg => {
-        if (msg.role?.toLowerCase() === "user") {
-            messages.push(new HumanMessage(msg.content));
-        } else {
-            messages.push(new AIMessage(msg.content));
+export const pdfAgent=async(state)=>{
+    try{
+        const llm=await getModel("pdf")
+        const prompt=`
+        You are an expert document writer.
+        Return ONLY valid JSON.
+        Do not return markdown.
+        Do not return explanation.
+        Structure:
+        {
+        "title":"",
+        "subtitle":"",
+        "sections":[
+        {
+        "heading":"",
+        "points":[]
         }
-    });
+        ]
+        }
+        Generate 4-8 sections.
+        Each section should have 3-6 concise bullet points.
+        Topic:
+        ${state.prompt}
+        `
+        const res=await llm.invoke(prompt)
+        const data=JSON.parse(res.content)
+        const pdfBuffer=await generatePdf(data)
 
-    const lastMsg = history[history.length - 1];
-    if (!lastMsg || lastMsg.role?.toLowerCase() !== "user" || lastMsg.content !== state.prompt) {
-        messages.push(new HumanMessage(state.prompt));
+        const filename=`pdf-${Date.now()}.pdf`
+        await uploadToS3(filename,pdfBuffer,"application/pdf")
+        const downloadUrl=await getFromS3(filename,60*10)
+
+        return {
+            ...state,
+            aiResponse:`PDF Generated
+            **${data.title}**
+            [Download PDF](${downloadUrl})
+            _Link expires in 10 minutes._
+            `
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            ...state,
+            aiResponse:"Failed to generate PDF"
+        }
     }
-
-    const response = await llm.invoke(messages);
-    return {
-        ...state,
-        aiResponse: response.content
-    };
-};
+}
