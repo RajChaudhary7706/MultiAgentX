@@ -73,6 +73,11 @@ MultiAgentX is a secure, distributed multi-agent system built on a microservices
 ### 🤖 Multi-Agent Orchestration
 * **LangGraph Integration**: Uses a `StateGraph` router to orchestrate specialized AI agents for different tasks (Chat, Coding, Vision, PDF, PPT, and Web Search).
 
+### 📊 PowerPoint Generation
+* **Presentation Agent**: Creates a six-slide presentation outline with concise talking points, then renders it as a downloadable `.pptx` file.
+* **Polished Slide Design**: Uses a consistent navy-and-blue theme, a branded cover and closing slide, and numbered two-column content cards with readable typography.
+* **Secure Downloads**: Uploads generated presentations to Amazon S3 and returns a time-limited signed download link.
+
 ### 🐳 Containerization
 * **Dockerized Infrastructure**: Includes a Docker Compose manifest to quickly bootstrap a localized Redis instance with port mappings.
 
@@ -91,6 +96,7 @@ MultiAgentX is a secure, distributed multi-agent system built on a microservices
 * **Framework**: Express.js (v5.x)
 * **Gateway Proxy**: Express HTTP Proxy
 * **Caching Client**: ioredis
+* **Presentation Generation**: PptxGenJS creates PowerPoint files; the AWS SDK uploads them to S3 for signed downloads.
 
 ### 🗄️ Database
 * **Database engine**: MongoDB Atlas (Cloud) / Local MongoDB Server
@@ -366,11 +372,16 @@ PORT=8003
 MONGODB_URL="mongodb://localhost:27017"
 OPENAI_API_KEY="your-openai-api-key"
 GOOGLE_API_KEY="your-google-api-key"
+AWS_REGION="your-aws-region"
+AWS_ACCESS_KEY_ID="your-aws-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-aws-secret-access-key"
+AWS_BUCKET_NAME="your-s3-bucket-name"
 ```
 * `PORT`: Port where the Agent Service listens.
 * `MONGODB_URL`: MongoDB connection endpoint.
 * `OPENAI_API_KEY`: API key for OpenAI LangChain integration.
 * `GOOGLE_API_KEY`: API key for Google GenAI LangChain integration.
+* `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_BUCKET_NAME`: AWS S3 configuration used to store generated PowerPoint files and create signed download links.
 
 </details>
 
@@ -401,7 +412,7 @@ All external HTTP traffic queries target the API Gateway (`:8000`).
 | **POST** | `/api/auth/login` | Auth Service | Verifies Google ID Token, logs/registers user, and issues a session cookie. | Yes (Firebase token) |
 | **POST** | `/api/auth/logout` | Auth Service | Clears cookie session headers and removes user state from Redis store. | Yes (Cookie session ID) |
 | **GET/POST** | `/api/chat/*` | Chat Service | Specific endpoints: `/create-conversation`, `/get-conversation`, `/update-conversation`, `/save-message`, `/get-message/:id`. Proxied securely. | Yes |
-| **POST** | `/api/agent/chat` | Agent Service | Entrypoint for LangGraph router to interact with specialized AI agents (coding, vision, search, etc.). | Yes |
+| **POST** | `/api/agent/chat` | Agent Service | Entrypoint for the LangGraph router and its specialized agents, including downloadable PDF and PowerPoint generation. | Yes |
 
 ---
 
