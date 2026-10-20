@@ -1,41 +1,61 @@
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getModel } from "../config/llmModels.js";
-import { getMemory } from "../config/memory.js";
+import { getModel } from "../config/llmModels.js"
+import { generatePpt } from "../utils/generatePpt.js"
+import { getFromS3 } from "../utils/getFromS3.js"
+import { uploadToS3 } from "../utils/uploadToS3.js"
+export const pptAgent=async(state)=>{
+    try{
+        const llm = await getModel("ppt")
+        const prompt = `You are a professional designer.
+        Return ONLY valid JSON.
 
-export const pptAgent = async (params) => {
-    const state = params;
-    const llm = await getModel("chat");
-    const history = (await getMemory(state.conversationId)) || [];
-
-    const systemPrompt = `You are MultiAgentX Presentation Specialist, an expert in creating compelling, well-structured presentation slide decks.
-Your goal is to organize topics into clear, professional presentation outlines and slide-by-slide content.
-
-Rules:
-- Structure each slide clearly with Slide Number and Slide Title (e.g. ## Slide 1: Introduction).
-- Provide bullet points for key talking points, speaker notes, and recommended visual suggestions.
-- Keep content concise, impactful, and audience-focused.
-- Use markdown formatting with clean typography and spacing.`;
-
-    const messages = [
-        new SystemMessage(systemPrompt)
-    ];
-
-    history.forEach(msg => {
-        if (msg.role?.toLowerCase() === "user") {
-            messages.push(new HumanMessage(msg.content));
-        } else {
-            messages.push(new AIMessage(msg.content));
+        Format:
+        {
+        "title":"",
+        "subtitle":"",
+        "slides":[
+        {"title":"",
+        "points":[
+        "",
+        "",
+        "",
+        ""
+        ]
         }
-    });
+        ]
+        }
+        Rules:
+        -Generate exaclty 6 content slides.
+        -Each slide should have 4-6 concise bullet points.
+        -No markdown.
+        -No explanation.
+        -No code block.
+        Return ONLY JSON.
 
-    const lastMsg = history[history.length - 1];
-    if (!lastMsg || lastMsg.role?.toLowerCase() !== "user" || lastMsg.content !== state.prompt) {
-        messages.push(new HumanMessage(state.prompt));
+        Topic:
+
+        ${state.prompt}
+        `
+        const res=await llm.invoke(prompt)
+        const data=JSON.parse(res.content)
+        const ppt=await generatePpt(data)
+        const buffer=await ppt.write({
+            outputType:"nodebuffer"
+        })
+
+        const filename=`ppt-${Date.now()}.pptx`
+        await uploadToS3(filename,buffer,"application/vnd.openxmlformats-officedocument.presentationml.presentation")
+        const downdoalUrl=await getFromS3(filename,24*60*60)
+        return {
+            ...state,
+            aiResponse:`Presentation Generated
+            **${data.title}**
+            [Download PPT](${downdoalUrl})
+            _LinK expires in 10 minutes._`
+        }
+        }catch(error){
+            return {
+                ...state,
+                aiResponse:"Failed to generate PPT.."
+            }
     }
-
-    const response = await llm.invoke(messages);
-    return {
-        ...state,
-        aiResponse: response.content
-    };
-};
+}
